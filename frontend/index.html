@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Shortest Path Finder</title>
+</head>
+<body>
+    <h1>Shortest Path Calculator</h1>
+
+    <textarea id="inputData" rows="10" cols="50" placeholder="Enter your graph data..."></textarea><br><br>
+    <button onclick="submitData()">Calculate Shortest Path</button>
+
+    <h2>Result:</h2>
+    <pre id="outputData"></pre>
+
+    <script>
+        function submitData() {
+            const inputData = document.getElementById('inputData').value;
+
+            fetch('http://localhost:5000/api/shortestpath', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ input: inputData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.result) {
+                    document.getElementById('outputData').textContent = data.result;
+                } else {
+                    document.getElementById('outputData').textContent = "Error: " + data.error;
+                }
+            })
+            .catch(error => {
+                document.getElementById('outputData').textContent = "Error: " + error;
+            });
+        }
+    </script>
+</body>
+</html>
