@@ -1,41 +1,97 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Shortest Path Finder</title>
+  <title>Flight Path Visualizer (User Input)</title>
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <style>
+    #network { width: 100%; height: 500px; border: 1px solid lightgray; margin-top: 10px; }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    input, button, textarea { margin: 5px; padding: 5px; }
+  </style>
 </head>
 <body>
-    <h1>Shortest Path Calculator</h1>
 
-    <textarea id="inputData" rows="10" cols="50" placeholder="Enter your graph data..."></textarea><br><br>
-    <button onclick="submitData()">Calculate Shortest Path</button>
+<h2>Flight Path Visualizer</h2>
 
-    <h2>Result:</h2>
-    <pre id="outputData"></pre>
+<label><b>Cities</b> (comma-separated IDs):</label><br>
+<input type="text" id="cities" placeholder="e.g. 0,1,2,3"><br>
 
-    <script>
-        function submitData() {
-            const inputData = document.getElementById('inputData').value;
+<label><b>Flights</b> (each line as src,dst,cost):</label><br>
+<textarea id="flights" rows="6" cols="50" placeholder="e.g.
+0,1,100
+1,2,150
+..."></textarea><br>
 
-            fetch('http://localhost:5000/api/shortestpath', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ input: inputData })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.result) {
-                    document.getElementById('outputData').textContent = data.result;
-                } else {
-                    document.getElementById('outputData').textContent = "Error: " + data.error;
-                }
-            })
-            .catch(error => {
-                document.getElementById('outputData').textContent = "Error: " + error;
-            });
-        }
-    </script>
+<label><b>Source:</b></label>
+<input type="number" id="src" placeholder="e.g. 0">
+
+<label><b>Destination:</b></label>
+<input type="number" id="dst" placeholder="e.g. 3">
+
+<label><b>Max Stops:</b></label>
+<input type="number" id="stops" placeholder="e.g. 2"><br>
+
+<button onclick="visualize()">Visualize & Calculate</button>
+
+<h3 id="output"></h3>
+<div id="network"></div>
+
+<script>
+function visualize() {
+  const cities = document.getElementById("cities").value.split(',').map(s => s.trim()).filter(Boolean);
+  const rawFlights = document.getElementById("flights").value.trim().split('\n').filter(Boolean);
+  const src = parseInt(document.getElementById("src").value);
+  const dst = parseInt(document.getElementById("dst").value);
+  const stops = parseInt(document.getElementById("stops").value);
+
+  if (!cities.length || !rawFlights.length || isNaN(src) || isNaN(dst) || isNaN(stops)) {
+    document.getElementById("output").innerText = "Please fill all fields correctly.";
+    return;
+  }
+
+  const flights = rawFlights.map(line => {
+    const [a, b, c] = line.split(',').map(Number);
+    return { from: a, to: b, cost: c };
+  });
+
+  // Graph visualization
+  const nodes = new vis.DataSet(cities.map(id => ({ id: parseInt(id), label: `City ${id}` })));
+  const edges = new vis.DataSet(flights.map(f => ({
+    from: f.from,
+    to: f.to,
+    label: `${f.cost}`,
+    arrows: 'to'
+  })));
+  const container = document.getElementById("network");
+  const data = { nodes, edges };
+  const options = { edges: { font: { align: 'middle' } }, physics: false };
+  new vis.Network(container, data, options);
+
+  // Format the input for backend
+  let inputText = `${cities.length} ${flights.length}\n`;
+  let formattedFlights = rawFlights.map(line => line.split(',').join(' ')).join('\n');
+  inputText += formattedFlights + `\n${src} ${dst} ${stops}`;
+
+  // API call
+  fetch('http://127.0.0.1:5000/api/shortestpath', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ input: inputText })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.result) {
+      document.getElementById("output").innerText = `Cheapest price from City ${src} to City ${dst}: ₹${data.result.trim()}`;
+    } else {
+      document.getElementById("output").innerText = "Error: " + (data.error || 'Unknown error');
+    }
+  })
+  .catch(error => {
+    console.error(error);
+    document.getElementById("output").innerText = "Fetch error: " + error;
+  });
+}
+</script>
+
 </body>
 </html>
