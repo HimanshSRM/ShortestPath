@@ -51,18 +51,21 @@ int findCheapestPrice(int cities,
         return srcDist == INT_MAX?-1:srcDist;
     }
 
-int main(){
-    int cities = 4;
-vector<vector<int>> flights = {
-    {0, 1, 100},
-    {1, 2, 100},
-    {0, 2, 500},
-    {2, 3, 100},
-    {1, 3, 600}
-    };
-    int src = 0;
-    int dst = 3;
-    int stops = 2;
-    cout << findCheapestPrice(cities, flights, src, dst, stops) << endl; // Output: 300
-    return 0;
-}
+    int main(){
+        int cities, flightCount;
+        cin >> cities >> flightCount;
+    
+        vector<vector<int>> flights;
+        for(int i = 0; i < flightCount; i++) {
+            int u, v, w;
+            cin >> u >> v >> w;
+            flights.push_back({u, v, w});
+        }
+    
+        int src, dst, stops;
+        cin >> src >> dst >> stops;
+    
+        cout << findCheapestPrice(cities, flights, src, dst, stops) << endl;
+        return 0;
+    }
+    
